@@ -5,6 +5,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { ContextProvider } from './Context';
 import Home from './Home';
 import Room from './Room';
+import Start from './components/Start';
 
 const App = () => {
 
@@ -13,7 +14,8 @@ const App = () => {
    <ContextProvider>
      <Router>
     <Routes>
-    <Route path="/" element={<Home />} />
+    <Route path="/" element={<Start />} />
+    <Route path="/WaitingRoom" element={<Home />} />
     <Route path="/room/:roomID" element={<Room />} />
     </Routes>
   </Router>
