@@ -3,6 +3,8 @@ import { Button, TextField, Grid, Typography, Container, Paper } from '@material
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { Assignment, Phone, PhoneDisabled } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/core/styles';
+import { v1 as uuid } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 
 import { SocketContext } from '../Context';
 
@@ -38,9 +40,16 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const Sidebar = ({ children }) => {
-  const { me, callAccepted, name, setName, callEnded, leaveCall, callUser } = useContext(SocketContext);
+  const navigate = useNavigate();
+  const { me, callAccepted, name, setName, callEnded, leaveCall, callUser, socket } = useContext(SocketContext);
   const [idToCall, setIdToCall] = useState('');
   const classes = useStyles();
+
+  const handleclick = () => {
+    const id = uuid();
+    navigate(`/room/${id}`);
+    socket.emit("join room", id);
+  };
 
   return (
     <Container className={classes.container}>
@@ -51,8 +60,8 @@ const Sidebar = ({ children }) => {
               <Typography gutterBottom variant="h6">Account Info</Typography>
               <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} fullWidth />
               <CopyToClipboard text={me} className={classes.margin}>
-                <Button variant="contained" color="primary" fullWidth startIcon={<Assignment fontSize="large" />}>
-                  Copy Your ID
+                <Button variant="contained" color="primary" fullWidth startIcon={<Assignment fontSize="large" />} onClick={handleclick}>
+                  Start Meet
                 </Button>
               </CopyToClipboard>
             </Grid>
@@ -65,7 +74,7 @@ const Sidebar = ({ children }) => {
                 </Button>
               ) : (
                 <Button variant="contained" color="primary" startIcon={<Phone fontSize="large" />} fullWidth onClick={() => callUser(idToCall)} className={classes.margin}>
-                  Call
+                  Join Meet
                 </Button>
               )}
             </Grid>

@@ -1,14 +1,17 @@
+// eslint-disable-next-line
 import React from 'react';
 import ReactDOM from 'react-dom';
 
 import App from './App';
-import { ContextProvider } from './Context';
+
 
 import './styles.css';
 
 ReactDOM.render(
-  <ContextProvider>
+  <div className="App">
     <App />
-  </ContextProvider>,
+    </div>
+,
+ 
   document.getElementById('root'),
 );
