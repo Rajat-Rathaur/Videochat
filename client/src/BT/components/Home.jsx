@@ -1,4 +1,4 @@
-
+import React, { useState, useEffect } from "react";
 import { AppBar, Toolbar, IconButton, Typography, Grid, Avatar, ThemeProvider, createTheme, Switch } from '@mui/material';
 import {
     Mic as MicIcon,
@@ -18,30 +18,32 @@ import { Box } from '@mui/material';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SendIcon from '@mui/icons-material/Send';
+// import VideoRoom from "./VideoRoom";
 
-import  {useContext } from 'react';
-import { SocketContext } from './Context';
+
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import Drawer from '@mui/material/Drawer';
 import TextField from '@mui/material/TextField';
 
+//
+// import NewVideo from './NewVideo';
 
 import Slide from '@mui/material/Slide';
 const Transition = React.forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
   });
 
-
-import { useSocket } from './contexts/SocketContext';
-import React, { useEffect, useRef, useState } from "react";
+//
+import { useSocket } from '../contexts/SocketContext';
+import { useParams, useNavigate } from 'react-router-dom'
+import { useUser } from '../contexts/UserContext';
+import {   Paper, makeStyles } from '@material-ui/core';
+import  {  useRef } from "react";
 import io from "socket.io-client";
 import Peer from "simple-peer";
 import styled from "styled-components";
-import { useNavigate, useParams } from 'react-router-dom'; 
-
-
-import {   Paper, makeStyles } from '@material-ui/core';
+// import { useNavigate, useParams } from 'react-router-dom'; 
 const Container = styled.div`
     padding: 20px;
     display: flex;
@@ -96,87 +98,85 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Room = () => {
+const Home = () => {
 
-  const {  socket } = useContext(SocketContext);
+//
+const classes = useStyles();
 
-  const classes = useStyles();
+const [peers, setPeers] = useState([]);
+const socketRef = useRef();
+const userVideo = useRef();
+const peersRef = useRef([]);
+const { gameId } = useParams();
 
-    const [peers, setPeers] = useState([]);
-    const socketRef = useRef();
-    const userVideo = useRef();
-    const peersRef = useRef([]);
-    const { roomID } = useParams();
-
-    useEffect(() => {
-        socketRef.current = io.connect("http://localhost:8000");
-        navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true }).then(stream => {
-            userVideo.current.srcObject = stream;
-            socketRef.current.emit("join room", roomID);
-            socketRef.current.on("all users", users => {
-                const peers = [];
-                users.forEach(userID => {
-                    const peer = createPeer(userID, socketRef.current.id, stream);
-                    peersRef.current.push({
-                        peerID: userID,
-                        peer,
-                    })
-                    peers.push(peer);
-                })
-                setPeers(peers);
-            })
-
-            socketRef.current.on("user joined", payload => {
-                const peer = addPeer(payload.signal, payload.callerID, stream);
+useEffect(() => {
+    socketRef.current = io.connect("http://localhost:8000");
+    navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true }).then(stream => {
+        userVideo.current.srcObject = stream;
+        socketRef.current.emit("join room", gameId);
+        socketRef.current.on("all users", users => {
+            const peers = [];
+            users.forEach(userID => {
+                const peer = createPeer(userID, socketRef.current.id, stream);
                 peersRef.current.push({
-                    peerID: payload.callerID,
+                    peerID: userID,
                     peer,
                 })
-
-                setPeers(users => [...users, peer]);
-            });
-
-            socketRef.current.on("receiving returned signal", payload => {
-                const item = peersRef.current.find(p => p.peerID === payload.id);
-                item.peer.signal(payload.signal);
-            });
+                peers.push(peer);
+            })
+            setPeers(peers);
         })
-    }, []);
 
-    function createPeer(userToSignal, callerID, stream) {
-        const peer = new Peer({
-            initiator: true,
-            trickle: false,
-            stream,
+        socketRef.current.on("user joined", payload => {
+            const peer = addPeer(payload.signal, payload.callerID, stream);
+            peersRef.current.push({
+                peerID: payload.callerID,
+                peer,
+            })
+
+            setPeers(users => [...users, peer]);
         });
 
-        peer.on("signal", signal => {
-            socketRef.current.emit("sending signal", { userToSignal, callerID, signal })
-        })
+        socketRef.current.on("receiving returned signal", payload => {
+            const item = peersRef.current.find(p => p.peerID === payload.id);
+            item.peer.signal(payload.signal);
+        });
+    })
+}, []);
 
-        return peer;
-    }
+function createPeer(userToSignal, callerID, stream) {
+    const peer = new Peer({
+        initiator: true,
+        trickle: false,
+        stream,
+    });
 
-    function addPeer(incomingSignal, callerID, stream) {
-        const peer = new Peer({
-            initiator: false,
-            trickle: false,
-            stream,
-        })
+    peer.on("signal", signal => {
+        socketRef.current.emit("sending signal", { userToSignal, callerID, signal })
+    })
 
-        peer.on("signal", signal => {
-            socketRef.current.emit("returning signal", { signal, callerID })
-        })
+    return peer;
+}
 
-        peer.signal(incomingSignal);
+function addPeer(incomingSignal, callerID, stream) {
+    const peer = new Peer({
+        initiator: false,
+        trickle: false,
+        stream,
+    })
 
-        return peer;
-    }
+    peer.on("signal", signal => {
+        socketRef.current.emit("returning signal", { signal, callerID })
+    })
+
+    peer.signal(incomingSignal);
+
+    return peer;
+}
 
 
 
-
-
+  const socket = useSocket()
     const [isMicOn, setMicOn] = useState(true);
     const [isCamOn, setCamOn] = useState(true);
     const [isSharingScreen, setSharingScreen] = useState(false);
@@ -189,6 +189,38 @@ const Room = () => {
     });
     const [isDialogOpen, setDialogOpen] = useState(false);
 
+    //
+    const { id, username } = useUser();
+    const [opponentSocketId, setOpponentSocketId] = useState('')
+    const [mySocketId, setMySocketId] = useState('')
+    useEffect(() => {
+      if (!socket) return;
+      socket.emit("join game", gameId, username ? username : "Guest",socket.id);
+  
+      socket.on('getOSID' , (socketId)=>{
+      setOpponentSocketId(socketId)
+ 
+       })
+  
+        console.log("._________________",opponentSocketId)
+  
+    }, [socket]);
+  
+    useEffect(() => {
+     
+      socket.on('createSIDB', (socketId) => {
+        setMySocketId(socketId)
+        // console.log("Creator socket.id: ", socketId);
+      });
+  
+      // socket.on('OppoISDB', (socketId) => {
+      //   setOpponentSocketId(socketId)
+      //   console.log("createSIDB socket.id: ", mySocketId);
+      // });
+  
+    }, []);
+  
+
     const handleDialogOpen = () => {
         setDialogOpen(true);
     };
@@ -199,7 +231,6 @@ const Room = () => {
 
     const handleLeaveMeeting = () => {
         // Logic for leaving the meeting
-        navigate('/')
         setDialogOpen(false);
     };
     const [isChatOpen, setChatOpen] = useState(false);
@@ -259,7 +290,7 @@ const Room = () => {
   const [myFile, setMyFile] = useState("");
   const [emo, setEmo] = useState(false);
   const [vidility, setVidility] = useState(false);
-  const { gameId } = useParams()
+  // const { gameId } = useParams()
   const emojis = [
     "✌",
     "😂",
@@ -356,65 +387,65 @@ const Room = () => {
   ];
 
 
-//   socket.on("new", (name) => {
-//     console.log("***********************8",name)
-//     setChats([
-//       ...chats,
-//       {
-//         type: "text",
-//         msg: `joined the chat`,
-//         loc: "center",
-//         action: "light text-success shadow",
-//         name: name,
-//       },
-//     ]);
+  socket.on("new", (name) => {
+    // console.log("***********************8",name)
+    setChats([
+      ...chats,
+      {
+        type: "text",
+        msg: `joined the chat`,
+        loc: "center",
+        action: "light text-success shadow",
+        name: name,
+      },
+    ]);
 
-//     setUsers([...users, name]);
-//   });
-//   socket.on("left", (name) => {
-//     if (name !== null) {
-//       setChats([
-//         ...chats,
-//         {
-//           type: "text",
-//           msg: `left the chat`,
-//           loc: "center",
-//           action: "light  text-danger shadow",
-//           name: name,
-//         },
-//       ]);
-//       let usr = users;
-//       for (let i = 0; i < usr.length; i++) {
-//         usr.splice(i, 1);
-//       }
-//       setUsers(usr);
-//     }
-//   });
-//   socket.on("message", (data) => {
-//     if (data.type == "text") {
-//       setChats([
-//         ...chats,
-//         {
-//           type: "text",
-//           msg: `${data.message}`,
-//           loc: "left",
-//           action: "dark",
-//           name: data.name,
-//         },
-//       ]);
-//     }
-//     if (data.type == "file") {
-//       setChats([
-//         ...chats,
-//         {
-//           type: "file",
-//           loc: "left",
-//           name: data.name,
-//           url: data.url,
-//         },
-//       ]);
-//     }
-//   });
+    setUsers([...users, name]);
+  });
+  socket.on("left", (name) => {
+    if (name !== null) {
+      setChats([
+        ...chats,
+        {
+          type: "text",
+          msg: `left the chat`,
+          loc: "center",
+          action: "light  text-danger shadow",
+          name: name,
+        },
+      ]);
+      let usr = users;
+      for (let i = 0; i < usr.length; i++) {
+        usr.splice(i, 1);
+      }
+      setUsers(usr);
+    }
+  });
+  socket.on("message", (data) => {
+    if (data.type == "text") {
+      setChats([
+        ...chats,
+        {
+          type: "text",
+          msg: `${data.message}`,
+          loc: "left",
+          action: "dark",
+          name: data.name,
+        },
+      ]);
+    }
+    if (data.type == "file") {
+      setChats([
+        ...chats,
+        {
+          type: "file",
+          loc: "left",
+          name: data.name,
+          url: data.url,
+        },
+      ]);
+    }
+  });
   const word = (sen, num) => {
     return sen.trim().split(" ")[num];
   };
@@ -531,8 +562,8 @@ const Room = () => {
  
     return (
         <ThemeProvider theme={theme}>
-            <Box style={{ height: '100vh' }}>
-                <div style={{ height: '100vh'}}>
+            <Box style={{ height: '100vh', backgroundColor: theme.palette.background.default }}>
+                <div style={{ height: '100vh', backgroundColor: theme.palette.background.default }}>
                     <AppBar position="static">
                         <Toolbar>
                             <Typography variant="h6" style={{ flexGrow: 1 }}>
@@ -552,8 +583,7 @@ const Room = () => {
 
                     <Grid container style={{ height: 'calc(100vh - 64px)' }}>
                         {/* Video and main content area */}
-
-                                <Container>
+                        <Container>
                                 <Grid container className={classes.gridContainer}>
                 <Paper className={classes.paper}>
                 <Grid item xs={12} md={6}>
@@ -571,7 +601,7 @@ const Room = () => {
                     </Paper>
                   </Grid>
         </Container>
-
+                      
                         <Grid item xs={12} sx={{ background: theme.palette.background.default, position: 'relative' }}>
 
                             {/* Ideally this is where the video stream would appear */}
@@ -716,7 +746,11 @@ const Room = () => {
               />
             </svg>
           </div>
-
+          {/* <NewVideo  
+                mySocketId={socket.id}
+                opponentSocketId={opponentSocketId}
+                myUserName={username}
+                opponentUserName="{opponentUserName}" />  */}
   
           <div
             className="shadow p-3 select-none"
@@ -960,4 +994,4 @@ const Room = () => {
     );
 }
 
-export default Room;
+export default Home;
