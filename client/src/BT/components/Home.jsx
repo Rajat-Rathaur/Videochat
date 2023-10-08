@@ -282,7 +282,9 @@ function addPeer(incomingSignal, callerID, stream) {
 
   //
   const [chats, setChats] = useState([]);
-
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isDrawerOpen,setDrawerOpen] = useState(false)
+  const [isAddressDialogOpen, setAddressDialogOpen] = useState(false);
   const [myName, setMyName] = useState("");
   const [txt, setTxt] = useState("");
   const [chat, setChat] = useState("");
@@ -388,19 +390,22 @@ function addPeer(incomingSignal, callerID, stream) {
 
 
   socket.on("new", (name) => {
-    // console.log("***********************8",name)
-    setChats([
-      ...chats,
-      {
-        type: "text",
-        msg: `joined the chat`,
-        loc: "center",
-        action: "light text-success shadow",
-        name: name,
-      },
-    ]);
-
-    setUsers([...users, name]);
+    // Check if the name is already in the users array
+    if (!users.includes(name)) {
+      setChats([
+        ...chats,
+        {
+          type: "text",
+          msg: `joined the chat`,
+          loc: "center",
+          action: "light text-success shadow",
+          name: name,
+        },
+      ]);
+  
+      // Only add the name if it's not already in the users array
+      setUsers([...users, name]);
+    }
   });
   socket.on("left", (name) => {
     if (name !== null) {
@@ -545,8 +550,8 @@ function addPeer(incomingSignal, callerID, stream) {
     loadAsUrl();
   };
   const mention = (e) => {
-    setChat(chat + " @" + e.target.textContent + " ");
-    document.querySelector("#chatbox").focus();
+    setSelectedUser(e);
+    setAddressDialogOpen(true);
   };
   const emoShow = (e) => {
     let x = e.clientX;
@@ -559,6 +564,10 @@ function addPeer(incomingSignal, callerID, stream) {
  
     }
   };
+
+  const getWalletAddress = () =>{
+
+  }
  
     return (
         <ThemeProvider theme={theme}>
@@ -631,11 +640,46 @@ function addPeer(incomingSignal, callerID, stream) {
                         <IconButton color={theme.palette.mode === 'dark' ? 'primary' : 'inherit'} onClick={handleClickOpen}>
                             <ChatIcon />
                         </IconButton>
-                        <IconButton color={theme.palette.mode === 'dark' ? 'primary' : 'inherit'}>
-                            <PeopleIcon />
-                        </IconButton>
+                        <IconButton color={theme.palette.mode === 'dark' ? 'primary' : 'inherit'} onClick={() => setDrawerOpen(true)}>
+              <PeopleIcon />
+            </IconButton>
                         {/* Add more controls as needed */}
                     </div>
+
+
+                    <Drawer anchor="right" open={isDrawerOpen} onClose={() => setDrawerOpen(false)}>
+  <div style={{ width: '250px', padding: '10px' }}>
+    <h2 style={{ fontWeight: 'bold', textAlign: 'center', margin: '10px 0' }}>
+      Participants
+    </h2>
+    {users.map((user) => (
+      <div
+        key={Math.random() * 10000}
+        className="pl-1 truncate break-all"
+        onClick={() => mention(user)}
+        style={{ cursor: 'pointer' }}
+      >
+        {user}
+      </div>
+    ))}
+  </div>
+</Drawer>
+
+<Dialog
+  open={isAddressDialogOpen}
+  onClose={() => setAddressDialogOpen(false)}
+  maxWidth="xs"
+  fullWidth
+>
+  <DialogTitle>User Address</DialogTitle>
+  <DialogContent>
+    <Typography>
+      {/* Display the user's address here */}
+      {getWalletAddress(selectedUser)}
+    </Typography>
+  </DialogContent>
+  <Button onClick={() => setAddressDialogOpen(false)}>Close</Button>
+</Dialog>
 
                     <Drawer
                         anchor="right"

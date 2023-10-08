@@ -48,6 +48,7 @@ io.on('connection', socket => {
   })
 
   socket.on("join room", roomID => {
+    socket.emit("game id",roomID)
     if (userss[roomID]) {
         const length = userss[roomID].length;
         if (length === 4) {
