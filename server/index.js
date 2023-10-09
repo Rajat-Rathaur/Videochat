@@ -35,6 +35,11 @@ io.on('connection', socket => {
     createGame(data)
   })
 
+  socket.on('bt', (username,account,gameId) => {
+    console.log('Lufffy-------',username,"---",account,"---",gameId)
+    socket.broadcast.to(gameId).emit("BT",username,account)
+  })
+
   socket.on('join game', (id, username,socketId) => {
 
     //

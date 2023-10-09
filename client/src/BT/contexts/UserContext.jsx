@@ -1,57 +1,56 @@
-import React, { useState, useEffect, useContext } from 'react'
-import io from 'socket.io-client'
+import React, { useState, useEffect, useContext } from 'react';
+import { generateId } from '../helpers';
 
-const UserContext = React.createContext()
+const UserContext = React.createContext();
 
 export function useUser() {
-  return useContext(UserContext)
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
 }
 
-import { generateId } from '../../helpers'
-
 export function UserProvider({ children }) {
-  const [id, setId] = useState()
-  const [username, setUsername] = useState(() => {
-    let n = localStorage.getItem('username')
-    if(n) return JSON.parse(n)
-    return null
-  })
-
-  
+  const [id, setId] = useState(null);
+  const [username, setUsername] = useState(null);
 
   useEffect(() => {
-    let uid = localStorage.getItem('uid')
-    if(!uid) {
-      let id = generateId()
-      localStorage.setItem('uid', id)
-      setId(id)
-    }else {
-      setId(uid)
-    }
+    const n = typeof window !== "undefined" ? localStorage.getItem('username') : null;
 
-    if(!username) {
+    if (n) {
+      setUsername(n);
+    } else {
       let name;
-      while(name == null || name === '') {
-        name = prompt('Choose a username')
+      while (!name || name.trim() === '') {
+        name = prompt('Please enter your name:');
       }
-      localStorage.setItem("username", JSON.stringify(name))
-      setUsername(name)
+      if (typeof window !== "undefined") {
+        localStorage.setItem('username', name);
+      }
+      setUsername(name);
     }
-  }, [])
 
-  useEffect(() => {
-    if(!username) return
-    localStorage.setItem('username', JSON.stringify(username))
-  }, [username])
+    let uid = typeof window !== "undefined" ? localStorage.getItem('uid') : null;
+    if (!uid) {
+      uid = generateId();
+      if (typeof window !== "undefined") {
+        localStorage.setItem('uid', uid);
+      }
+      setId(uid);
+    } else {
+      setId(uid);
+    }
+  }, []);
 
   function updateUsername(u) {
-    setUsername(u)
+    if (typeof window !== "undefined") {
+      localStorage.setItem('username', u);
+    }
+    setUsername(u);
   }
 
-  const value = { id, username, updateUsername }
-  return (
-    <UserContext.Provider value={value}>
-      { children }
-    </UserContext.Provider>
-  )
+  const value = { id, username, updateUsername };
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }

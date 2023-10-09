@@ -388,6 +388,10 @@ function addPeer(incomingSignal, callerID, stream) {
     "💚",
   ];
 
+ 
+
+ 
+
 
   socket.on("new", (name) => {
     // Check if the name is already in the users array
@@ -565,8 +569,35 @@ function addPeer(incomingSignal, callerID, stream) {
     }
   };
 
-  const getWalletAddress = () =>{
+  const [userAccounts, setUserAccounts] = useState({});
 
+  useEffect(() => {
+
+
+    socket.on("BT", (username, account) => {
+      console.log("Luffy----------",username,"-",account)
+      setUserAccounts((prevUserAccounts) => ({
+        ...prevUserAccounts,
+        [username]: account,
+      }));
+    });
+     
+    // socket.on("BT", (username,account) => {
+    //   console.log("Luffy----------",username,"-",account)
+     
+    //  });
+
+    return () => {
+      socket.off("BT");
+    };
+     
+  }, []);
+
+
+  const getWalletAddress = (selectedUser) =>{
+    const account = userAccounts[selectedUser];
+    console.log(`Wallet address for ${selectedUser}: ${account}`);
+    return account;
   }
  
     return (

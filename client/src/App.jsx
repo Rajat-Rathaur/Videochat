@@ -5,7 +5,7 @@ import {
   Routes,
   Route
 } from "react-router-dom";
-
+import { createContext } from "react";
 
 //  import { SocketProvider } from '../BT/contexts/SocketContext'
 // import UserProvider from './BT/contexts/UserContext';
@@ -37,7 +37,8 @@ import JoinIcon from '@mui/icons-material/GroupAdd';
 import VideoCallIcon from '@mui/icons-material/VideoCall';
 import Navbar from './BT/components/Navbar'
 import Footer from './BT/components/Footer'
-
+import { getAccount } from "./utils/wallet";
+const context=createContext({});
 
 
 import GamePage from './BT/components/GamePage'
@@ -45,9 +46,31 @@ import Menu from './BT/components/Menu'
 
 
 function App() {
+
+  const [account, setAccount] = useState(null);
+  const [loading,setLoading] = useState(false);
+  const [selectImg,setSelectImg] = useState(null);
+
+  const [modalOpen, setModalOpen] = useState(false);
+
+
+  
+
+
+   const hlo= async () => {
+      const account = await getAccount();
+      setAccount(account);
+
+    }
+    useEffect(()=>{
+      hlo();
+    })
+
   return (
     <>
   <ContextProvider>
+  <context.Provider value={{account,setAccount,hlo,loading,setLoading,modalOpen,setModalOpen,selectImg,setSelectImg}}>
+
         <UserProvider>
           <SocketProvider>
             <Router>
@@ -59,12 +82,14 @@ function App() {
             </Router>
           </SocketProvider>
         </UserProvider>
+        </context.Provider>
         </ContextProvider>
     </>
   );
 }
 
 export default App;
+export {context}
 // import React from 'react';
 // import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 // import { Typography, AppBar } from '@material-ui/core';

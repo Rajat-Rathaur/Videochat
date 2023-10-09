@@ -1,14 +1,50 @@
 import React from 'react';
-
+import { useContext, useEffect, useState } from "react";
+import { connectWallet } from '../../utils/wallet';
+import { getAccount } from '../../utils/wallet';
+import { wallet } from '../../utils/wallet';
+// import { context } from "../App";
+import { context } from '../../App';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import { Menu, MenuItem } from '@mui/material';
 import { AppBar, Toolbar, Typography, InputBase, Button, Avatar, IconButton, Popover } from '@mui/material';
-import Meta from './Meta';
+
 import { useUser } from '../contexts/UserContext';
 
 
 const Navbar = () => {
+  const { account,setAccount,hlo }=useContext(context);
+  const [set,useset]=useState(false);
+  useEffect(() => {
+  (async ()=>{hlo()})(); 
+  });
+
+  // TODO 4.a - Complete onConnectWallet function
+  const onConnectWallet = async (e) => {
+    
+    await connectWallet();
+   hlo();
+   useset(true);
+  };
+
+  const logOut = async() => {
+    try{
+//  await LogOut();
+  setAccount(null)
+  window.location.reload();
+ 
+    }
+    catch(error){
+      console.log(error)
+    }
+
+ console.log(account)
+ 
+ 
+  }
+
+  
   // const { id, username } = useUser();
   const username = localStorage.getItem('username')
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -119,7 +155,10 @@ const Navbar = () => {
         >
           {username}
         </Typography>
-        <Meta/>
+        <button onClick={onConnectWallet} name="butt" className="btn btn-outline-info">
+            {/* TODO 5.a - Show account address if wallet is connected */}
+            { account ? "Connected" : "Connect Wallet"}
+          </button>
         <Menu
           anchorEl={anchorEl}
           keepMounted

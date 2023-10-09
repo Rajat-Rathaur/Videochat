@@ -6,6 +6,7 @@ import { useSocket } from '../contexts/SocketContext'
 import Loader from './Loader'
 import Navbar from './Navbar'
 import Footer from './Footer'
+import { useContext } from "react";
 
 import { inDevelopment } from '../vars'
 
@@ -28,8 +29,11 @@ import HistoryIcon from '@mui/icons-material/History';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import JoinIcon from '@mui/icons-material/GroupAdd';
 import VideoCallIcon from '@mui/icons-material/VideoCall';
+import { context } from '../../App'
 
 export default function Menu() {
+  const {account} = useContext(context);
+
   const [myGames, setMyGames] = useState()
   const [loading, setLoading] = useState(false)
   const [isPrivate, setIsPrivate] = useState()
@@ -53,6 +57,7 @@ export default function Menu() {
   
     setLoading(true)
     socket.emit("join room", gameId);
+    socket.emit("bt", username,account,gameId);
     console.log("Joining game with ID:", gameId);
   
     navigate(`/Meet/${gameId}`);
@@ -68,7 +73,8 @@ export default function Menu() {
   useEffect(() => {
     if(!socket) return
     function gotogame(id) {
-      socket.emit("join room", gameId);
+      socket.emit("join room", id);
+      socket.emit("bt", username,account,id);
       navigate('/Meet/' + id)
     }
     socket.on('game id', gotogame)
