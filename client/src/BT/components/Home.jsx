@@ -20,7 +20,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import SendIcon from '@mui/icons-material/Send';
 // import VideoRoom from "./VideoRoom";
 
-
+import VpnLockIcon from '@mui/icons-material/VpnLock';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import Drawer from '@mui/material/Drawer';
@@ -284,6 +284,7 @@ function addPeer(incomingSignal, callerID, stream) {
   const [chats, setChats] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isDrawerOpen,setDrawerOpen] = useState(false)
+  const [isDrawerOpen2,setDrawerOpen2] = useState(false)
   const [isAddressDialogOpen, setAddressDialogOpen] = useState(false);
   const [myName, setMyName] = useState("");
   const [txt, setTxt] = useState("");
@@ -602,8 +603,8 @@ function addPeer(incomingSignal, callerID, stream) {
  
     return (
         <ThemeProvider theme={theme}>
-            <Box style={{ height: '100vh', backgroundColor: theme.palette.background.default }}>
-                <div style={{ height: '100vh', backgroundColor: theme.palette.background.default }}>
+            <Box style={{ height: '100vh', }}>
+                <div style={{ height: '100vh',  }}>
                     <AppBar position="static">
                         <Toolbar>
                             <Typography variant="h6" style={{ flexGrow: 1 }}>
@@ -674,6 +675,10 @@ function addPeer(incomingSignal, callerID, stream) {
                         <IconButton color={theme.palette.mode === 'dark' ? 'primary' : 'inherit'} onClick={() => setDrawerOpen(true)}>
               <PeopleIcon />
             </IconButton>
+
+            <IconButton color={theme.palette.mode === 'dark' ? 'primary' : 'inherit'} onClick={() => setDrawerOpen2(true)}>
+              <VpnLockIcon />
+            </IconButton>
                         {/* Add more controls as needed */}
                     </div>
 
@@ -693,6 +698,14 @@ function addPeer(incomingSignal, callerID, stream) {
         {user}
       </div>
     ))}
+  </div>
+</Drawer>
+
+<Drawer anchor="right" open={isDrawerOpen2} onClose={() => setDrawerOpen2(false)}>
+  <div style={{ width: '250px', padding: '10px' }}>
+    <h2 style={{ fontWeight: 'bold', textAlign: 'center', margin: '10px 0' }}>
+      Secure File Sharing
+    </h2>
   </div>
 </Drawer>
 
