@@ -107,7 +107,7 @@ import Peer from 'simple-peer';
 
 const SocketContext = createContext();
 
-export const socket = io('http://localhost:8000');
+export const socket = io('https://blocksmeet-server.onrender.com');
 
 const ContextProvider = ({ children }) => {
   const [callAccepted, setCallAccepted] = useState(false);

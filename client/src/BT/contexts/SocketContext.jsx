@@ -14,7 +14,7 @@ export function SocketProvider({ children }) {
   const [socket, setSocket] = useState()
   useEffect(() => {
     if(!id) return
-    const newSocket = io('http://localhost:8000', { 
+    const newSocket = io('https://blocksmeet-server.onrender.com', { 
       query: { id }
     })
     setSocket(newSocket)

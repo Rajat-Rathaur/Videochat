@@ -148,17 +148,36 @@ const Navbar = () => {
           </div>
         </Popover>
 
-        <Typography
+        {/* <Typography
           variant="subtitle1"
           sx={{ ml: 1, cursor: 'pointer' }}
           onClick={handleMenuOpen} // Add onClick handler here
         >
           {username}
         </Typography>
+        <div>
+        <Typography variant="h6" sx={{ flexGrow: 0 }}>
         <button onClick={onConnectWallet} name="butt" className="btn btn-outline-info">
-            {/* TODO 5.a - Show account address if wallet is connected */}
+      
             { account ? "Connected" : "Connect Wallet"}
           </button>
+          </Typography>
+          </div> */}
+           <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="subtitle1" sx={{ ml: 1, cursor: 'pointer' }}>
+            {username}
+          </Typography>
+          <div>
+          <div style={{ marginLeft: '10px' }}>
+            <Typography variant="h6">
+              <button onClick={onConnectWallet} name="butt" className="btn btn-light">
+                {/* TODO 5.a - Show account address if wallet is connected */}
+                {account ? "Connected" : "Connect Wallet"}
+              </button>
+            </Typography>
+          </div>
+        </div>
+        </div>
         <Menu
           anchorEl={anchorEl}
           keepMounted

@@ -120,7 +120,7 @@ export default function Menu() {
   return (
     <>
 <Navbar/>
-{showOnline && <div className="fixed top-8 left-8 bg-gray-100 p-2 rounded">Online: {onlineUsers.length}</div>}
+{showOnline && <div className="fixed top-8 left-8 bg-gray-100 p-2 rounded text-white">Online: {onlineUsers.length}</div>}
     <div
         sx={{
           display: 'flex',
