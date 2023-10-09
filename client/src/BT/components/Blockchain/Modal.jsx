@@ -1,10 +1,14 @@
 import { useContext, useEffect, useState } from "react";
-import { fetchStorage } from "../utils/tzkt";
+// import { fetchStorage } from "../utils/tzkt";
 import "./Modal.css";
-import { tezos } from "../utils/tezos";
-import { getAccount } from "../utils/wallet";
+// import { tezos } from "../utils/tezos";
+// import { getAccount } from "../utils/wallet";
  import {VscChromeClose} from "react-icons/vsc"
-import { context } from "../App";
+// import { context } from "../App";
+import { fetchStorage } from "../../../utils/tzkt";
+import { tezos } from "../../../utils/tezos";
+import { getAccount } from "../../../utils/wallet";
+import { context } from "../../../App";
 
 
 

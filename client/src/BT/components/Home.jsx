@@ -1,4 +1,16 @@
 import React, { useState, useEffect } from "react";
+import { useContext } from "react";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Modal from "./Blockchain/Modal";
+import "./Blockchain/Display.css"
+// import "./Blockchain/FileUpload.css"
+import axios from "axios";
+import { tezos } from "../../utils/tezos";
+import { context } from "../../App";
+import { fetchStorage } from "../../utils/tzkt";
+import { getAccount } from "../../utils/wallet";
+import {RxCrossCircled} from "react-icons/rx";
+import {BiShareAlt} from "react-icons/bi"
 import { AppBar, Toolbar, IconButton, Typography, Grid, Avatar, ThemeProvider, createTheme, Switch } from '@mui/material';
 import {
     Mic as MicIcon,
@@ -100,7 +112,8 @@ const useStyles = makeStyles((theme) => ({
 
 const Home = () => {
 
-//
+// 
+const {modalOpen} = useContext(context);
 const classes = useStyles();
 
 const [peers, setPeers] = useState([]);
@@ -397,16 +410,16 @@ function addPeer(incomingSignal, callerID, stream) {
   socket.on("new", (name) => {
     // Check if the name is already in the users array
     if (!users.includes(name)) {
-      setChats([
-        ...chats,
-        {
-          type: "text",
-          msg: `joined the chat`,
-          loc: "center",
-          action: "light text-success shadow",
-          name: name,
-        },
-      ]);
+      // setChats([
+      //   ...chats,
+      //   {
+      //     type: "text",
+      //     msg: `joined the chat`,
+      //     loc: "center",
+      //     action: "light text-success shadow",
+      //     name: name,
+      //   },
+      // ]);
   
       // Only add the name if it's not already in the users array
       setUsers([...users, name]);
@@ -601,6 +614,270 @@ function addPeer(incomingSignal, callerID, stream) {
     return account;
   }
  
+  //file share
+  const {account} = useContext(context);
+  const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState("No image selected");
+  // const [loading, setLoading] = useState(false);
+  // const {loading,setLoading}=useContext(context);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (file) {
+      try {
+        setLoading(true)
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const resFile = await axios({
+          method: "post",
+          url: "https://api.pinata.cloud/pinning/pinFileToIPFS",
+          data: formData,
+          headers: {
+            // pinata_api_key: `ba976f7f1755c3f08e18`,
+            pinata_api_key: `620861d0c860a7e660c2`,
+            pinata_secret_api_key: `
+            0f56c486c84ffd95e0f2928d48e332e3de0679c786247cb524887f3a4dae31a8`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        const ImgHash = `https://gateway.pinata.cloud/ipfs/${resFile.data.IpfsHash}`;
+        
+      
+        try{
+          const contract = await tezos.wallet.at("KT1T3m3FarBi44wp8z4KcRUY45NSZGU9QBBJ");
+          const op =await contract.methods.add(ImgHash).send();
+          setLoading(true);
+          await op.confirmation(1);
+          setLoading(false);
+          alert("Successfully Image Uploaded");
+          setFileName("No image selected");
+          setFile(null);
+        }
+        catch(err){
+          throw err;
+        }
+     
+          
+      } catch (e) {
+        alert("Unable to upload image to Pinata");
+      }
+      setLoading(false)
+
+    }
+    setFileName("No image selected");
+    setFile(null);
+  };
+
+  const retrieveFile = (e) => {
+    e.preventDefault();
+    const data = e.target.files[0]; //files array of files object
+    console.log(data);
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(data);
+    reader.onloadend = () => {
+      setFile(e.target.files[0]);
+    };
+    setFileName(e.target.files[0].name);
+  };
+
+  //display
+  const [data, setData] = useState(""); 
+  const [account1, setAccount] = useState(null);
+  const [MyL,setMyL] = useState();
+  const {loading,setLoading} = useContext(context);
+  const {modalopen,setModalOpen}=useContext(context);
+  const {selectImg,setSelectImg}=useContext(context);
+
+  const getdata = async () => {
+    const account = await getAccount();
+    setAccount(account);
+    let dataArray;
+    const storage = await fetchStorage();
+    const my_map = storage.user;
+  
+    if (my_map) {
+      if (my_map.hasOwnProperty(account)) {
+        const my_list = my_map[account];
+        dataArray = Object.keys(my_list);
+        if (dataArray[0]) {
+          const str = dataArray.toString();
+          const str_array = str.split(",");
+          console.log(str_array);
+  
+          const images = str_array.map((item, i) => {
+            return (
+              <a key={i}>
+                <img
+                  key={i}
+                  src={`https://gateway.pinata.cloud/ipfs/${item.substring(34)}`}
+                  alt="new"
+                  className="image-list"
+                ></img>
+                <BiShareAlt
+                  style={{
+                    cursor: "pointer",
+                    display: "absolute",
+                    marginTop: "-583px",
+                    color: "black",
+                    marginLeft: "131px",
+                    fontSize: "30px",
+                  }}
+                  onClick={() => setContent(item)}
+                />
+                <RxCrossCircled
+                  style={{
+                    cursor: "pointer",
+                    display: "absolute",
+                    marginTop: "-560px",
+                    color: "red",
+                    marginLeft: "131px",
+                    fontSize: "30px",
+                  }}
+                  onClick={() => deleteImage(item)}
+                />
+              </a>
+            );
+          });
+          setData(images);
+        } else {
+          alert("No image to display");
+        }
+      } else {
+        alert("No image to display");
+      }
+    } else {
+      alert("Storage data not available");
+    }
+  };
+
+  const getOtherData = async()  => {
+    const account = await getAccount();
+    setAccount(account);
+    let dataArray;
+    let d;
+    const Otheraddress = document.querySelector(".address").value;
+    console.log(Otheraddress);
+
+
+
+    const storage = await fetchStorage();
+    if (Otheraddress && Otheraddress!=account ) {
+        const my_map = storage.access_user;
+        if(my_map.hasOwnProperty(Otheraddress)){
+          console.log("hii");
+          const my_list = my_map[Otheraddress];
+          if(my_list.hasOwnProperty(account)){
+            console.log("hello");
+            const my_imgs = my_list[account];
+            const imgs = Object.keys(my_imgs);
+            const str = imgs.toString(); 
+            const str_array = str.split(",");
+                    
+          const images = str_array.map((item, i) => {
+            return (
+                <a key={i}>
+                <img
+                  key={i}
+                  src={`https://gateway.pinata.cloud/ipfs/${item.substring(34)}`}
+                  alt="new"
+                  className="image-list"
+                ></img>
+              </a>
+            );
+          });
+          setData(images);
+
+            // if(my_imgs.hasOwnProperty(url)){
+            //   const image = (()=>{return (
+            //             <>
+            //             <a href={url} target="_blank">
+            //               <img
+            //                 src={url}
+            //                 alt="new"
+            //                 className="image-list"
+            //                 style={{display:"relative"}}
+            //               ></img>
+            //             </a>
+            //             </>
+            //           );});
+            //           setData(image);
+
+
+            // }
+
+          }else{
+            alert("You don't have access")
+          }
+        }else{
+          alert("User is not registered");
+        }
+      }
+      else{
+        alert("Enter correct value");
+      }
+
+          
+          // if(my_L[0]){
+          //     dataArray = my_L;
+          //     const str = dataArray.toString();
+          //     const str_array = str.split(",");
+          //     const images = str_array.map((item, i) => {
+          //       return (
+          //         <>
+          //         <a href={item} key={i} target="_blank">
+                   
+          //           <img
+          //             key={i}
+          //             src={`https://gateway.pinata.cloud/ipfs/${item.substring(34)}`}
+          //             alt="new"
+          //             className="image-list"
+          //             style={{display:"relative"}}
+          //           ></img>
+                    
+          //         </a>
+          //         </>
+          //       );
+          //     });
+          //     setData(images);
+          //   }else{
+          //     alert("No image present at that address")
+          //   }}
+         
+
+  };
+
+  const hideOther = () => {
+    const Otheraddress = document.querySelector(".address").value;
+    if(Otheraddress && account){
+      window.location.reload();
+    }else{
+      alert("No image to hide");
+    }
+
+  }
+
+  const deleteImage = async (img) => {
+    try{
+      const contract = await tezos.wallet.at("KT1T3m3FarBi44wp8z4KcRUY45NSZGU9QBBJ");
+      // setContract(contract)
+      const op =await contract.methods.deleteImg(img).send();
+      await op.confirmation(1);
+      alert("Removed Successfully");
+      window.location.reload();
+     
+    }
+    catch(err){
+      alert("Try Again");
+      
+    } 
+    
+}
+const setContent = async (item) => {
+  setModalOpen(true);
+  setSelectImg(item);
+
+}
+ 
     return (
         <ThemeProvider theme={theme}>
             <Box style={{ height: '100vh', }}>
@@ -621,6 +898,9 @@ function addPeer(incomingSignal, callerID, stream) {
                             </IconButton>
                         </Toolbar>
                     </AppBar>
+                    {modalOpen && (
+        <Modal></Modal>
+      )}
 
                     <Grid container style={{ height: 'calc(100vh - 64px)' }}>
                         {/* Video and main content area */}
@@ -701,13 +981,54 @@ function addPeer(incomingSignal, callerID, stream) {
   </div>
 </Drawer>
 
-<Drawer anchor="right" open={isDrawerOpen2} onClose={() => setDrawerOpen2(false)}>
+{/* <Drawer anchor="right" open={isDrawerOpen2} onClose={() => setDrawerOpen2(false)}>
   <div style={{ width: '250px', padding: '10px' }}>
     <h2 style={{ fontWeight: 'bold', textAlign: 'center', margin: '10px 0' }}>
       Secure File Sharing
     </h2>
   </div>
-</Drawer>
+</Drawer> */}
+{/* File sharing */}
+<Drawer anchor="right" open={isDrawerOpen2} onClose={() => setDrawerOpen2(false)}>
+        <div style={{ width: '250px', padding: '10px' }}>
+          <h2 style={{ fontWeight: 'bold', textAlign: 'center', margin: '10px 0' }}>
+            Secure File Sharing
+          </h2>
+          <h6>{account}</h6>
+
+          {/* Your existing form */}
+          <div className="top">
+            <form className="form" onSubmit={handleSubmit}>
+              <label htmlFor="file-upload" className="">
+                Choose Image
+              </label>
+              <input
+                disabled={!account}
+                type="file"
+                id="file-upload"
+                name="data"
+                onChange={retrieveFile}
+                className="bg-dark text-white"
+              />
+              <span className="textArea">Image: {fileName}</span>
+              <button type="submit" className="upload btn btn-warning" disabled={!file}>
+                Upload File
+              </button>
+              {loading ? (
+                <div className="Background">
+                  <div className="loader"></div>
+                </div>
+              ) : null}
+            </form>
+          </div>
+
+        </div>
+
+        <button className="center button" onClick={getdata} >
+        Get Files
+      </button>
+      <div className="image-list">{account ? data : null}</div>
+      </Drawer>
 
 <Dialog
   open={isAddressDialogOpen}
@@ -803,43 +1124,7 @@ function addPeer(incomingSignal, callerID, stream) {
         </AppBar>
       
  <div className="shadow  p-2 mb-4 flex justify-between">
-        <div className="flex space-x-4">
-          <div
-            className="shadow p-2 flex bg-red-400 justify-center items-center rounded-full"
-            style={{
-              position: "absolute",
-              right: "6rem",
-              width: "3rem",
-              height: "3rem",
-            }}
-            onClick={() => {
-              if (vidility) {
-                setVidility(false);
-                localStream.getVideoTracks()[0].stop();
-              } else {
-                setVidility(true);
-              }
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              viewBox="0 0 16 16"
-            >
-              <path
-                fillRule="evenodd"
-                d="M0 5a2 2 0 0 1 2-2h7.5a2 2 0 0 1 1.983 1.738l3.11-1.382A1 1 0 0 1 16 4.269v7.462a1 1 0 0 1-1.406.913l-3.111-1.382A2 2 0 0 1 9.5 13H2a2 2 0 0 1-2-2V5zm11.5 5.175 3.5 1.556V4.269l-3.5 1.556v4.35zM2 4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h7.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H2z"
-              />
-            </svg>
-          </div>
-          {/* <NewVideo  
-                mySocketId={socket.id}
-                opponentSocketId={opponentSocketId}
-                myUserName={username}
-                opponentUserName="{opponentUserName}" />  */}
-  
+        <div className="flex space-x-4 ">
           <div
             className="shadow p-3 select-none"
             style={{
@@ -928,7 +1213,7 @@ function addPeer(incomingSignal, callerID, stream) {
       <br />
       <br />
         <div
-          className="p-3 fixed bottom-0 flex bg-light shadow"
+          className="p-3 flex fixed-bottom p-3 shadow"
           style={{ boxShadow: "0 0 10px rgba(0,0,0,.1)" }}
         >
           <input
